@@ -1,0 +1,2358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#16a34a" />
+<title>Pickleball Bracket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.0/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f5f4;
+    --surface: #ffffff;
+    --surface-2: #f0efed;
+    --ink: #18181b;
+    --ink-soft: #52525b;
+    --ink-muted: #a1a1aa;
+    --line: #e4e4e7;
+    --accent: #16a34a;
+    --accent-soft: #dcfce7;
+    --warn: #ef4444;
+    --warn-soft: #fee2e2;
+    --gold: #fbbf24;
+    --silver: #94a3b8;
+    --bronze: #d97706;
+    --tap: 48px;
+  }
+  [data-theme="dark"] {
+    --bg: #09090b;
+    --surface: #18181b;
+    --surface-2: #27272a;
+    --ink: #fafafa;
+    --ink-soft: #d4d4d8;
+    --ink-muted: #71717a;
+    --line: #27272a;
+    --accent: #22c55e;
+    --accent-soft: #14532d;
+    --warn: #f87171;
+    --warn-soft: #450a0a;
+    --gold: #fcd34d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-size: 16px;
+  }
+  body {
+    min-height: 100vh;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding: 12px 16px;
+    padding-top: calc(12px + env(safe-area-inset-top));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+  .brand-dot {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    color: white; font-size: 16px;
+  }
+  .icon-btn {
+    width: 40px; height: 40px;
+    border: none; background: transparent; color: var(--ink);
+    border-radius: 50%;
+    font-size: 18px; cursor: pointer;
+    display: grid; place-items: center;
+    transition: background 0.15s;
+  }
+  .icon-btn:active { background: var(--surface-2); }
+
+  main { max-width: 720px; margin: 0 auto; padding: 16px; }
+  .panel { display: none; }
+  .panel.active { display: block; animation: slide 0.2s ease; }
+  @keyframes slide {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: var(--ink-muted); font-size: 14px; margin-bottom: 18px; }
+
+  .mode-toggle {
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: var(--surface-2);
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 16px;
+  }
+  .mode-toggle button {
+    background: transparent; border: none;
+    padding: 10px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .mode-toggle button.active {
+    background: var(--surface); color: var(--ink);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  /* FORMAT PICKER */
+  .format-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .format-card-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+  }
+  .format-options { display: flex; flex-direction: column; gap: 8px; }
+  .format-option {
+    background: var(--surface-2);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    text-align: left;
+    font-family: inherit;
+    color: var(--ink);
+    width: 100%;
+  }
+  .format-option.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .format-option-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; gap: 8px;}
+  .format-option-stats { font-size: 11px; color: var(--ink-muted); font-weight: 500; flex-shrink: 0;}
+  .format-option.active .format-option-stats { color: var(--ink-soft); }
+  .format-option-sub { font-size: 12px; color: var(--ink-muted); }
+
+  .btn {
+    min-height: var(--tap);
+    padding: 0 18px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: inherit; font-size: 15px; font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.15s, background 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-block { width: 100%; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-row .btn { flex: 1; min-width: 0; }
+
+  /* PLAYERS */
+  .players-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .player-row {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 4px 14px 4px 4px;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    position: relative;
+  }
+  .player-row.pair-end { margin-bottom: 4px; }
+  .player-row:focus-within { border-color: var(--accent); }
+  .player-num {
+    width: 32px; height: 32px;
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .pair-mode .player-row.pair-start .player-num,
+  .pair-mode .player-row.pair-end .player-num {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .player-row input {
+    border: none; background: transparent;
+    font-family: inherit; font-size: 16px;
+    color: var(--ink);
+    width: 100%;
+    outline: none;
+    padding: 12px 0;
+  }
+  .player-row input::placeholder { color: var(--ink-muted); }
+  .pair-label {
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 12px 4px 6px;
+    display: none;
+  }
+  .pair-mode .pair-label { display: block; }
+  .pair-mode .pair-label:first-child { margin-top: 0; }
+
+  /* TEAMS */
+  .teams-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .team-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .team-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .team-badge {
+    background: var(--accent); color: white;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 700;
+  }
+  .team-name { font-size: 16px; font-weight: 700; }
+  .team-players { display: flex; flex-direction: column; gap: 4px; }
+  .team-player {
+    font-size: 15px;
+    color: var(--ink-soft);
+    padding: 8px 10px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .swap-mode .team-player { cursor: pointer; background: var(--surface-2); }
+  .team-player.selected { background: var(--accent) !important; color: white; }
+
+  /* SETTINGS */
+  .settings-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 4px 14px;
+    margin-bottom: 16px;
+  }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 0;
+  }
+  .setting-row + .setting-row { border-top: 1px solid var(--line); }
+  .setting-label { font-size: 15px; font-weight: 500; }
+  .seg {
+    display: inline-flex;
+    background: var(--surface-2);
+    border-radius: 10px;
+    padding: 3px;
+  }
+  .seg button {
+    background: transparent; border: none;
+    padding: 8px 14px;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-radius: 8px;
+    min-width: 44px;
+  }
+  .seg button.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  .switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch-track {
+    position: absolute; inset: 0;
+    background: var(--surface-2);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .switch-track::before {
+    content: '';
+    position: absolute;
+    width: 22px; height: 22px;
+    left: 3px; top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .switch input:checked + .switch-track { background: var(--accent); }
+  .switch input:checked + .switch-track::before { transform: translateX(20px); }
+
+  /* BRACKET */
+  .bracket-stage { margin-bottom: 24px; }
+  .bracket-section {
+    margin-bottom: 28px;
+    padding-bottom: 4px;
+  }
+  .bracket-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    padding: 8px 4px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .bracket-section-title.winners { color: var(--accent); }
+  .bracket-section-title.losers { color: var(--warn); }
+  .bracket-section-title.grand { color: var(--gold); }
+  .stage-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; padding: 0 4px;
+  }
+  .stage-name {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .stage-name.current { color: var(--accent); }
+  .stage-icon { font-size: 14px; }
+  .stage-progress {
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .bracket-matches { display: flex; flex-direction: column; gap: 10px; }
+
+  /* MATCH CARD */
+  .match-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    position: relative;
+  }
+  .match-card.live { border-color: var(--accent); }
+  .match-card.locked {
+    opacity: 0.6;
+    background: var(--surface-2);
+  }
+  .match-card.final-match {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 8%, var(--surface)), var(--surface));
+  }
+  .match-card.losers-match {
+    border-left: 3px solid var(--warn);
+  }
+  .match-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  .match-status {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .match-status.upcoming { background: var(--surface-2); color: var(--ink-soft); }
+  .match-status.live { background: var(--accent); color: white; }
+  .match-status.completed { background: var(--ink); color: var(--bg); }
+  .match-status.locked { background: var(--surface-2); color: var(--ink-muted); }
+  .team-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+  .team-row + .team-row { margin-top: 4px; }
+  .team-row.winner { background: var(--accent-soft); }
+  .team-row.winner .team-row-name {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .team-row.winner .team-row-name::after { content: ' 🏆'; }
+  .team-row.tbd .team-row-name { color: var(--ink-muted); font-style: italic; }
+  .team-row-name { font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .team-row-players { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+  .score-controls { display: flex; align-items: center; gap: 4px; }
+  .score-btn {
+    width: 40px; height: 40px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px; font-weight: 600;
+    display: grid; place-items: center;
+    transition: transform 0.1s, background 0.15s;
+    user-select: none;
+    font-family: inherit;
+  }
+  .score-btn:active:not(:disabled) { transform: scale(0.9); background: var(--surface-2); }
+  .score-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .score-btn.plus {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .score-btn.plus:disabled { background: var(--surface-2); color: var(--ink-muted); border-color: var(--line); }
+  .score-display {
+    font-size: 26px; font-weight: 700;
+    min-width: 36px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .match-action-btn {
+    width: 100%;
+    margin-top: 10px;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink-muted);
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .match-action-btn:active { background: var(--surface-2); }
+
+  /* CHAMPION */
+  .champion-card {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 25%, var(--surface)), var(--surface));
+    border: 2px solid var(--gold);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .champion-trophy { font-size: 48px; margin-bottom: 8px; }
+  .champion-label {
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    margin-bottom: 4px;
+  }
+  .champion-name { font-size: 24px; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
+  .champion-players { font-size: 14px; color: var(--ink-soft); }
+
+  /* BRACKET CHART */
+  .bracket-chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 4px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .bracket-chart-hint {
+    font-size: 11px;
+    color: var(--ink-muted);
+    text-align: center;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .bracket-chart {
+    display: block;
+    margin: 0 auto;
+    min-width: 100%;
+  }
+  .bc-round-label {
+    font-size: 9px;
+    font-weight: 700;
+    fill: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .bc-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .bc-section-label.winners { fill: var(--accent); }
+  .bc-section-label.losers  { fill: var(--warn); }
+  .bc-section-label.grand   { fill: var(--gold); }
+  .bc-match-bg {
+    fill: var(--surface);
+    stroke: var(--line);
+    stroke-width: 1;
+  }
+  .bc-match-bg.completed { fill: var(--surface-2); }
+  .bc-match-bg.live { stroke: var(--accent); stroke-width: 1.5; }
+  .bc-match-bg.final { stroke: var(--gold); stroke-width: 1.5; }
+  .bc-match-divider { stroke: var(--line); stroke-width: 0.5; }
+  .bc-team-name {
+    font-size: 10px;
+    fill: var(--ink);
+    font-weight: 500;
+  }
+  .bc-team-name.winner { font-weight: 700; fill: var(--accent); }
+  .bc-team-name.tbd { fill: var(--ink-muted); font-style: italic; }
+  .bc-seed {
+    font-size: 9px;
+    fill: var(--ink-muted);
+    font-weight: 500;
+  }
+  .bc-seed.winner { fill: var(--accent); }
+  .bc-score {
+    font-size: 11px;
+    font-weight: 700;
+    fill: var(--ink);
+    text-anchor: end;
+    font-variant-numeric: tabular-nums;
+  }
+  .bc-score.winner { fill: var(--accent); }
+  .bc-line {
+    stroke: var(--line);
+    stroke-width: 1.5;
+    fill: none;
+  }
+  .bc-line.winner-path { stroke: var(--accent); stroke-width: 2; }
+  .bc-line.loser-path  { stroke: var(--warn); stroke-width: 1; stroke-dasharray: 3,2; opacity: 0.6; }
+  .bc-trophy {
+    font-size: 14px;
+  }
+  .bc-match-label {
+    font-size: 8px;
+    fill: var(--ink-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* RESULTS */
+  .results-list {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .result-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-medal { font-size: 24px; text-align: center; }
+  .result-rank {
+    font-size: 18px; font-weight: 700;
+    color: var(--ink-muted);
+    text-align: center;
+  }
+  .result-name { font-size: 15px; font-weight: 600; }
+  .result-sub { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+  .result-record {
+    font-size: 13px; font-weight: 600;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .result-row.gold { background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 20%, transparent), transparent); }
+  .result-row.silver { background: linear-gradient(90deg, color-mix(in srgb, var(--silver) 12%, transparent), transparent); }
+  .result-row.bronze { background: linear-gradient(90deg, color-mix(in srgb, var(--bronze) 14%, transparent), transparent); }
+
+  /* EMPTY */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-muted);
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
+  .empty-title { font-weight: 600; color: var(--ink-soft); margin-bottom: 4px; font-size: 15px; }
+  .empty-text { font-size: 13px; }
+
+  /* TAB BAR */
+  .tabbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    display: flex;
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab {
+    flex: 1; border: none;
+    background: transparent;
+    padding: 10px 4px 12px;
+    color: var(--ink-muted);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-family: inherit;
+    font-size: 11px; font-weight: 600;
+    transition: color 0.15s;
+  }
+  .tab:active { background: var(--surface-2); }
+  .tab-icon { font-size: 20px; line-height: 1; }
+  .tab.active { color: var(--accent); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: calc(90px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: var(--bg);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 100;
+    pointer-events: none;
+    max-width: 90vw;
+    text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* MENU */
+  .menu-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .menu-backdrop.show { opacity: 1; pointer-events: auto; }
+  .menu-sheet {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    z-index: 70;
+    padding: 8px 12px calc(20px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.25s ease;
+  }
+  .menu-sheet.show { transform: translateY(0); }
+  .menu-handle {
+    width: 36px; height: 4px;
+    background: var(--ink-muted);
+    opacity: 0.4;
+    border-radius: 999px;
+    margin: 8px auto 12px;
+  }
+  .menu-item {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--ink);
+    padding: 14px;
+    text-align: left;
+    font-family: inherit;
+    font-size: 15px; font-weight: 500;
+    cursor: pointer;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .menu-item:active { background: var(--surface-2); }
+  .menu-item.danger { color: var(--warn); }
+
+  /* SEED INFO */
+  .seed-info {
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .seed-info strong { color: var(--ink); }
+
+  @media (min-width: 600px) {
+    .players-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .pair-mode .players-list { display: flex; flex-direction: column; }
+    .teams-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-dot">●</div>
+    Pickleball
+  </div>
+  <div style="display:flex; gap:4px;">
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle theme">
+      <span id="themeIcon">☾</span>
+    </button>
+    <button class="icon-btn" id="menuBtn" aria-label="Menu">⋯</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel active" id="panel-players">
+    <h2>Players</h2>
+    <p class="subtitle">Enter 12 names to start</p>
+    <div class="mode-toggle" id="pairModeToggle">
+      <button data-mode="auto" class="active">🎲 Auto-pair</button>
+      <button data-mode="paired">👥 I have pairs</button>
+    </div>
+    <div class="players-list" id="playersGrid"></div>
+    <button class="btn btn-primary btn-block" id="generateTeamsBtn">Continue →</button>
+    <div class="btn-row" style="margin-top: 8px;">
+      <button class="btn" id="shuffleNamesBtn">Demo Names</button>
+      <button class="btn" id="clearNamesBtn">Clear</button>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-teams">
+    <h2>Teams</h2>
+    <p class="subtitle" id="teamsSubtitle">6 pairs · tap Swap to rearrange</p>
+    <div class="btn-row" style="margin-bottom: 14px;">
+      <button class="btn" id="reshuffleBtn">↻ Reshuffle</button>
+      <button class="btn" id="swapModeBtn">⇄ Swap</button>
+    </div>
+    <div class="teams-list" id="teamsGrid"></div>
+
+    <div class="format-card" id="formatCard" style="margin-top: 16px;">
+      <div class="format-card-title">Bracket Format</div>
+      <div class="format-options">
+        <button class="format-option active" data-format="single">
+          <div class="format-option-title">
+            <span>Single Elimination</span>
+            <span class="format-option-stats">5 matches · ~1.5 hr</span>
+          </div>
+          <div class="format-option-sub">Lose once and you're out. Fast and clean.</div>
+        </button>
+        <button class="format-option" data-format="double">
+          <div class="format-option-title">
+            <span>Double Elimination</span>
+            <span class="format-option-stats">9 matches · ~2.5 hr</span>
+          </div>
+          <div class="format-option-sub">Lose twice to be eliminated. Every team plays at least 2x.</div>
+        </button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-block" id="startBracketBtn" style="margin-top: 16px;">Start Bracket →</button>
+  </section>
+
+  <section class="panel" id="panel-bracket">
+    <h2>Bracket</h2>
+    <p class="subtitle" id="bracketSubtitle">Single-elimination · 6 teams · 5 matches</p>
+
+    <div class="settings-card">
+      <div class="setting-row">
+        <span class="setting-label">Win at</span>
+        <div class="seg" id="winPointsSeg">
+          <button data-val="11" class="active">11</button>
+          <button data-val="15">15</button>
+          <button data-val="21">21</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Win by 2</span>
+        <label class="switch">
+          <input type="checkbox" id="winByTwo" checked />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Last action</span>
+        <button class="btn" style="min-height: 36px; padding: 0 14px; font-size: 13px;" id="undoBtn">↶ Undo</button>
+      </div>
+    </div>
+
+    <div id="bracketContainer">
+      <div class="empty">
+        <div class="empty-icon">🏆</div>
+        <div class="empty-title">No bracket yet</div>
+        <div class="empty-text">Generate teams to seed the bracket</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-results">
+    <h2>Results</h2>
+    <p class="subtitle">Bracket overview & final placements</p>
+    <div id="bracketChartContainer"></div>
+    <div id="resultsContainer">
+      <div class="empty">
+        <div class="empty-icon">🏆</div>
+        <div class="empty-title">No results yet</div>
+        <div class="empty-text">Play through the bracket to see placements</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar" role="tablist">
+  <button class="tab active" data-tab="players"><span class="tab-icon">👥</span><span>Players</span></button>
+  <button class="tab" data-tab="teams"><span class="tab-icon">🤝</span><span>Teams</span></button>
+  <button class="tab" data-tab="bracket"><span class="tab-icon">🏓</span><span>Bracket</span></button>
+  <button class="tab" data-tab="results"><span class="tab-icon">🏆</span><span>Results</span></button>
+</nav>
+
+<div class="menu-backdrop" id="menuBackdrop"></div>
+<div class="menu-sheet" id="menuSheet">
+  <div class="menu-handle"></div>
+  <button class="menu-item" id="reseedBtn">🎲 Re-seed Bracket</button>
+  <button class="menu-item" id="exportCsvBtn">📊 Export as CSV</button>
+  <button class="menu-item" id="exportPdfBtn">📄 Export as PDF</button>
+  <button class="menu-item danger" id="resetTourneyBtn">⚠️ Reset Tournament</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'pickleballBracket_v2';
+const DEMO_NAMES = ['Alex','Jordan','Sam','Riley','Casey','Morgan','Taylor','Drew','Avery','Quinn','Reese','Sage'];
+
+let state = {
+  players: Array(12).fill(''),
+  pairMode: 'auto',
+  teams: [],
+  seeds: [],
+  matches: [],
+  bracketFormat: 'single', // 'single' | 'double'
+  history: [],
+  winPoints: 11,
+  winByTwo: true,
+  theme: 'light',
+  swapSelection: null,
+};
+
+let swapModeActive = false;
+
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {} }
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      Object.assign(state, JSON.parse(raw));
+      state.swapSelection = null;
+    }
+  } catch(e) {}
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    window.scrollTo({top: 0, behavior: 'instant'});
+  });
+});
+function switchTab(name) {
+  document.querySelector(`.tab[data-tab="${name}"]`).click();
+}
+
+function applyTheme() {
+  document.documentElement.dataset.theme = state.theme;
+  document.getElementById('themeIcon').textContent = state.theme === 'dark' ? '☀' : '☾';
+}
+document.getElementById('themeBtn').addEventListener('click', () => {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  applyTheme();
+  save();
+});
+
+const menuBackdrop = document.getElementById('menuBackdrop');
+const menuSheet = document.getElementById('menuSheet');
+function openMenu() { menuBackdrop.classList.add('show'); menuSheet.classList.add('show'); }
+function closeMenu() { menuBackdrop.classList.remove('show'); menuSheet.classList.remove('show'); }
+document.getElementById('menuBtn').addEventListener('click', openMenu);
+menuBackdrop.addEventListener('click', closeMenu);
+
+document.querySelectorAll('#pairModeToggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#pairModeToggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.pairMode = btn.dataset.mode;
+    save();
+    renderPlayers();
+    updateGenerateBtn();
+  });
+});
+
+function updateGenerateBtn() {
+  document.getElementById('generateTeamsBtn').textContent =
+    state.pairMode === 'paired' ? 'Use These Pairs →' : 'Generate Teams →';
+}
+
+/* FORMAT PICKER */
+document.querySelectorAll('#formatCard .format-option').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const newFormat = btn.dataset.format;
+    if (newFormat === state.bracketFormat) return;
+    if (state.matches.length > 0 && state.matches.some(m => m.completed || m.scoreA > 0 || m.scoreB > 0)) {
+      if (!confirm('Switching format will reset bracket progress. Continue?')) return;
+    }
+    document.querySelectorAll('#formatCard .format-option').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.bracketFormat = newFormat;
+    if (state.teams.length === 6) {
+      seedAndBuildBracket();
+    } else {
+      state.matches = [];
+      state.seeds = [];
+    }
+    state.history = [];
+    save();
+    renderBracket();
+    renderResults();
+    updateBracketSubtitle();
+  });
+});
+
+function updateBracketSubtitle() {
+  const sub = document.getElementById('bracketSubtitle');
+  if (state.bracketFormat === 'double') {
+    sub.textContent = 'Double-elimination · 6 teams · up to 9 matches';
+  } else {
+    sub.textContent = 'Single-elimination · 6 teams · 5 matches';
+  }
+}
+
+/* PLAYERS */
+function renderPlayers() {
+  const grid = document.getElementById('playersGrid');
+  grid.classList.toggle('pair-mode', state.pairMode === 'paired');
+  grid.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    if (state.pairMode === 'paired' && i % 2 === 0) {
+      const label = document.createElement('div');
+      label.className = 'pair-label';
+      label.textContent = `Team ${(i/2)+1}`;
+      grid.appendChild(label);
+    }
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    if (state.pairMode === 'paired') {
+      row.classList.add(i % 2 === 0 ? 'pair-start' : 'pair-end');
+    }
+    row.innerHTML = `
+      <div class="player-num">${i+1}</div>
+      <input type="text" placeholder="Player ${i+1}" value="${esc(state.players[i] || '')}" data-idx="${i}" maxlength="20" autocomplete="off" />
+    `;
+    grid.appendChild(row);
+  }
+  grid.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', e => {
+      state.players[parseInt(e.target.dataset.idx)] = e.target.value;
+      save();
+    });
+  });
+}
+
+document.getElementById('shuffleNamesBtn').addEventListener('click', () => {
+  state.players = [...DEMO_NAMES];
+  save();
+  renderPlayers();
+  toast('Demo names loaded');
+});
+document.getElementById('clearNamesBtn').addEventListener('click', () => {
+  state.players = Array(12).fill('');
+  save();
+  renderPlayers();
+});
+
+/* TEAMS */
+function generateTeams() {
+  const names = state.players.map(n => n.trim());
+  const filled = names.filter(n => n.length > 0);
+  if (filled.length < 12) {
+    toast(`Enter all 12 names (${filled.length}/12)`);
+    return false;
+  }
+  if (new Set(filled.map(n => n.toLowerCase())).size !== filled.length) {
+    toast('Names must be unique');
+    return false;
+  }
+  let indices;
+  if (state.pairMode === 'paired') {
+    indices = Array.from({length: 12}, (_, i) => i);
+  } else {
+    indices = Array.from({length: 12}, (_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+  }
+  state.teams = [];
+  for (let i = 0; i < 6; i++) {
+    state.teams.push({
+      id: 'T' + (i+1),
+      name: `Team ${i+1}`,
+      p1: indices[i*2],
+      p2: indices[i*2 + 1]
+    });
+  }
+  state.matches = [];
+  state.seeds = [];
+  state.history = [];
+  save();
+  return true;
+}
+
+document.getElementById('generateTeamsBtn').addEventListener('click', () => {
+  if (generateTeams()) {
+    renderTeams();
+    seedAndBuildBracket();
+    renderBracket();
+    renderResults();
+    switchTab('teams');
+    toast(state.pairMode === 'paired' ? 'Pairs locked in' : 'Teams generated');
+  }
+});
+
+document.getElementById('reshuffleBtn').addEventListener('click', () => {
+  if (state.pairMode === 'paired') {
+    toast('Switch to Auto-pair on Players tab to reshuffle');
+    return;
+  }
+  if (!confirm('Reshuffle teams? Bracket will be reset.')) return;
+  if (generateTeams()) {
+    renderTeams();
+    seedAndBuildBracket();
+    renderBracket();
+    renderResults();
+    toast('Reshuffled');
+  }
+});
+
+document.getElementById('startBracketBtn').addEventListener('click', () => {
+  if (state.teams.length === 0) { toast('Generate teams first'); return; }
+  switchTab('bracket');
+});
+
+function renderTeams() {
+  const grid = document.getElementById('teamsGrid');
+  const subtitle = document.getElementById('teamsSubtitle');
+  const reshuffleBtn = document.getElementById('reshuffleBtn');
+  if (state.pairMode === 'paired') {
+    subtitle.textContent = '6 pairs (locked from Players)';
+    reshuffleBtn.style.display = 'none';
+  } else {
+    subtitle.textContent = '6 pairs · tap Swap to rearrange';
+    reshuffleBtn.style.display = '';
+  }
+  if (state.teams.length === 0) {
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">🤝</div><div class="empty-title">No teams yet</div><div class="empty-text">Go to Players to generate</div></div>';
+    document.getElementById('formatCard').style.display = 'none';
+    return;
+  }
+  document.getElementById('formatCard').style.display = '';
+  grid.innerHTML = '';
+  state.teams.forEach((team, idx) => {
+    const card = document.createElement('div');
+    card.className = 'team-card';
+    card.innerHTML = `
+      <div class="team-head">
+        <div class="team-badge">${idx+1}</div>
+        <div class="team-name">${esc(team.name)}</div>
+      </div>
+      <div class="team-players">
+        <div class="team-player" data-team="${team.id}" data-player="p1">${esc(state.players[team.p1])}</div>
+        <div class="team-player" data-team="${team.id}" data-player="p2">${esc(state.players[team.p2])}</div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+  attachSwapHandlers();
+  // Update format selector active state
+  document.querySelectorAll('#formatCard .format-option').forEach(b => {
+    b.classList.toggle('active', b.dataset.format === state.bracketFormat);
+  });
+}
+
+document.getElementById('swapModeBtn').addEventListener('click', () => {
+  swapModeActive = !swapModeActive;
+  document.getElementById('teamsGrid').classList.toggle('swap-mode', swapModeActive);
+  state.swapSelection = null;
+  document.querySelectorAll('.team-player.selected').forEach(el => el.classList.remove('selected'));
+  toast(swapModeActive ? 'Tap two players to swap' : 'Swap mode off');
+});
+
+function attachSwapHandlers() {
+  document.querySelectorAll('.team-player').forEach(el => {
+    el.addEventListener('click', () => {
+      if (!swapModeActive) return;
+      const teamId = el.dataset.team;
+      const playerSlot = el.dataset.player;
+      if (!state.swapSelection) {
+        state.swapSelection = { teamId, playerSlot };
+        el.classList.add('selected');
+      } else {
+        const a = state.swapSelection;
+        const b = { teamId, playerSlot };
+        if (a.teamId === b.teamId && a.playerSlot === b.playerSlot) {
+          el.classList.remove('selected');
+          state.swapSelection = null;
+          return;
+        }
+        const teamA = state.teams.find(t => t.id === a.teamId);
+        const teamB = state.teams.find(t => t.id === b.teamId);
+        const tmp = teamA[a.playerSlot];
+        teamA[a.playerSlot] = teamB[b.playerSlot];
+        teamB[b.playerSlot] = tmp;
+        state.matches = [];
+        state.history = [];
+        state.swapSelection = null;
+        save();
+        renderTeams();
+        seedAndBuildBracket();
+        renderBracket();
+        renderResults();
+        toast('Players swapped');
+      }
+    });
+  });
+}
+
+/* BRACKET BUILDERS */
+function seedTeamsRandomly() {
+  const ids = state.teams.map(t => t.id);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  return ids;
+}
+
+function buildSingleElim() {
+  // 5 matches: QF1, QF2, SF1, SF2, F
+  // Bracket structure:
+  //   QF1: #3 v #6 → SF1 slot B
+  //   QF2: #4 v #5 → SF2 slot B
+  //   SF1: #1 v QF1w → F slot A
+  //   SF2: #2 v QF2w → F slot B
+  //   F:   SF1w v SF2w
+  return [
+    {
+      id: 'QF1', section: 'W', stage: 'QF', label: 'Quarterfinal 1',
+      teamA: state.seeds[2], teamB: state.seeds[5],
+      seedA: 3, seedB: 6,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'SF1', slot: 'B' },
+      loserTo: null
+    },
+    {
+      id: 'QF2', section: 'W', stage: 'QF', label: 'Quarterfinal 2',
+      teamA: state.seeds[3], teamB: state.seeds[4],
+      seedA: 4, seedB: 5,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'SF2', slot: 'B' },
+      loserTo: null
+    },
+    {
+      id: 'SF1', section: 'W', stage: 'SF', label: 'Semifinal 1',
+      teamA: state.seeds[0], teamB: null,
+      seedA: 1, seedB: null,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'F', slot: 'A' },
+      loserTo: null
+    },
+    {
+      id: 'SF2', section: 'W', stage: 'SF', label: 'Semifinal 2',
+      teamA: state.seeds[1], teamB: null,
+      seedA: 2, seedB: null,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'F', slot: 'B' },
+      loserTo: null
+    },
+    {
+      id: 'F', section: 'W', stage: 'F', label: 'Final',
+      teamA: null, teamB: null,
+      seedA: null, seedB: null,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: null,
+      loserTo: null
+    }
+  ];
+}
+
+function buildDoubleElim() {
+  // 9 matches:
+  //   Winners Bracket: WQF1, WQF2, WSF1, WSF2, WF
+  //   Losers Bracket: LR1, LR2, LR3, LF
+  //   Grand Final: GF
+  //
+  // Wait — let me count more carefully for 6 teams w/ 2 byes
+  //
+  // WB:
+  //   WQF1 (#3 v #6) → WSF1 winner slot
+  //   WQF2 (#4 v #5) → WSF2 winner slot
+  //   WSF1 (#1 v WQF1w) → WF
+  //   WSF2 (#2 v WQF2w) → WF
+  //   WF (WSF1w v WSF2w) → GF
+  //   = 5 matches in WB
+  //
+  // LB has 4 teams dropping in (2 QF losers + 2 SF losers)
+  // LB structure:
+  //   LR1: WQF1L vs WQF2L → LR2 (the QF losers face off first)
+  //   LR2: LR1w vs WSF1L → LR3
+  //   LR3: LR2w vs WSF2L → LF (this is essentially LB final)
+  //   = 3 matches in LB
+  //
+  // GF: WFw vs LR3w
+  //   = 1 match
+  //
+  // Total: 5 + 3 + 1 = 9 matches ✓
+  return [
+    // WINNERS BRACKET
+    {
+      id: 'WQF1', section: 'W', stage: 'QF', label: 'Winners QF 1',
+      teamA: state.seeds[2], teamB: state.seeds[5],
+      seedA: 3, seedB: 6,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'WSF1', slot: 'B' },
+      loserTo:  { matchId: 'LR1',  slot: 'A' }
+    },
+    {
+      id: 'WQF2', section: 'W', stage: 'QF', label: 'Winners QF 2',
+      teamA: state.seeds[3], teamB: state.seeds[4],
+      seedA: 4, seedB: 5,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'WSF2', slot: 'B' },
+      loserTo:  { matchId: 'LR1',  slot: 'B' }
+    },
+    {
+      id: 'WSF1', section: 'W', stage: 'SF', label: 'Winners SF 1',
+      teamA: state.seeds[0], teamB: null,
+      seedA: 1, seedB: null,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'WF', slot: 'A' },
+      loserTo:  { matchId: 'LR2', slot: 'B' }
+    },
+    {
+      id: 'WSF2', section: 'W', stage: 'SF', label: 'Winners SF 2',
+      teamA: state.seeds[1], teamB: null,
+      seedA: 2, seedB: null,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'WF', slot: 'B' },
+      loserTo:  { matchId: 'LR3', slot: 'B' }
+    },
+    {
+      id: 'WF', section: 'W', stage: 'F', label: 'Winners Final',
+      teamA: null, teamB: null,
+      seedA: null, seedB: null,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'GF', slot: 'A' },
+      loserTo:  null   // WF loser DOES drop to LB but in our 9-match version we skip this
+                       // Actually for proper double-elim, WF loser goes to LF.
+                       // But to keep it 9 matches, we go straight to GF.
+                       // Note: pure double-elim with a true LB final + GF would be 10-11 matches.
+    },
+    // LOSERS BRACKET
+    {
+      id: 'LR1', section: 'L', stage: 'LR1', label: 'Losers Round 1',
+      teamA: null, teamB: null,
+      seedA: null, seedB: null,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'LR2', slot: 'A' },
+      loserTo: null
+    },
+    {
+      id: 'LR2', section: 'L', stage: 'LR2', label: 'Losers Round 2',
+      teamA: null, teamB: null,
+      seedA: null, seedB: null,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'LR3', slot: 'A' },
+      loserTo: null
+    },
+    {
+      id: 'LR3', section: 'L', stage: 'LF', label: 'Losers Final',
+      teamA: null, teamB: null,
+      seedA: null, seedB: null,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: { matchId: 'GF', slot: 'B' },
+      loserTo: null
+    },
+    // GRAND FINAL
+    {
+      id: 'GF', section: 'GF', stage: 'GF', label: 'Grand Final',
+      teamA: null, teamB: null,
+      seedA: null, seedB: null,
+      scoreA: 0, scoreB: 0, completed: false, winner: null,
+      winnerTo: null,
+      loserTo: null
+    }
+  ];
+}
+
+function seedAndBuildBracket() {
+  if (state.teams.length !== 6) return;
+  state.seeds = seedTeamsRandomly();
+  state.matches = state.bracketFormat === 'double' ? buildDoubleElim() : buildSingleElim();
+  save();
+}
+
+function getMatch(id) { return state.matches.find(m => m.id === id); }
+function getTeam(id) { return state.teams.find(t => t.id === id); }
+function teamDisplayName(id) {
+  if (!id) return 'TBD';
+  const t = getTeam(id);
+  return t ? t.name : 'TBD';
+}
+function teamPlayers(id) {
+  const t = getTeam(id);
+  if (!t) return '';
+  return `${state.players[t.p1]} & ${state.players[t.p2]}`;
+}
+function getSeed(teamId) {
+  const idx = state.seeds.indexOf(teamId);
+  return idx >= 0 ? idx + 1 : null;
+}
+
+function checkWinner(match) {
+  if (!match.teamA || !match.teamB) return null;
+  const target = state.winPoints, byTwo = state.winByTwo;
+  const a = match.scoreA, b = match.scoreB;
+  if (byTwo) {
+    if (a >= target && a - b >= 2) return 'A';
+    if (b >= target && b - a >= 2) return 'B';
+  } else {
+    if (a >= target && a > b) return 'A';
+    if (b >= target && b > a) return 'B';
+  }
+  return null;
+}
+
+/* PROPAGATION
+ * After any score change, rebuild the dependent slots from scratch.
+ * For each match in defined order, look at its winnerTo and loserTo,
+ * and set the destination slots.
+ */
+function propagateBracket() {
+  // First, clear all "downstream" slots that aren't initial seeds.
+  // A match's slot is "initial" if it was set at build time (not derived).
+  // We track this by checking: is this match's slot pointed to by another match's winnerTo/loserTo?
+  const downstream = new Set(); // set of "matchId:slot" strings
+  state.matches.forEach(m => {
+    if (m.winnerTo) downstream.add(`${m.winnerTo.matchId}:${m.winnerTo.slot}`);
+    if (m.loserTo)  downstream.add(`${m.loserTo.matchId}:${m.loserTo.slot}`);
+  });
+
+  // Reset downstream slots first
+  state.matches.forEach(m => {
+    if (downstream.has(`${m.id}:A`)) {
+      m.teamA = null; m.seedA = null;
+    }
+    if (downstream.has(`${m.id}:B`)) {
+      m.teamB = null; m.seedB = null;
+    }
+  });
+
+  // Re-evaluate completion of each match based on current scores (slot may now be null)
+  state.matches.forEach(m => {
+    if (!m.teamA || !m.teamB) {
+      // Can't be completed without both teams. Reset score state if it had one.
+      if (m.completed || m.scoreA > 0 || m.scoreB > 0) {
+        m.scoreA = 0; m.scoreB = 0;
+        m.completed = false; m.winner = null;
+      }
+    } else {
+      const w = checkWinner(m);
+      m.completed = !!w;
+      m.winner = w;
+    }
+  });
+
+  // Propagate winners/losers in match order. Multiple passes to handle chains.
+  for (let pass = 0; pass < 5; pass++) {
+    let changed = false;
+    state.matches.forEach(m => {
+      if (!m.completed || !m.winner) return;
+      const winnerId = m.winner === 'A' ? m.teamA : m.teamB;
+      const loserId  = m.winner === 'A' ? m.teamB : m.teamA;
+      const winnerSeed = m.winner === 'A' ? m.seedA : m.seedB;
+      const loserSeed  = m.winner === 'A' ? m.seedB : m.seedA;
+
+      if (m.winnerTo) {
+        const target = getMatch(m.winnerTo.matchId);
+        if (target) {
+          const teamKey = m.winnerTo.slot === 'A' ? 'teamA' : 'teamB';
+          const seedKey = m.winnerTo.slot === 'A' ? 'seedA' : 'seedB';
+          if (target[teamKey] !== winnerId) {
+            target[teamKey] = winnerId;
+            target[seedKey] = winnerSeed;
+            changed = true;
+          }
+        }
+      }
+      if (m.loserTo) {
+        const target = getMatch(m.loserTo.matchId);
+        if (target) {
+          const teamKey = m.loserTo.slot === 'A' ? 'teamA' : 'teamB';
+          const seedKey = m.loserTo.slot === 'A' ? 'seedA' : 'seedB';
+          if (target[teamKey] !== loserId) {
+            target[teamKey] = loserId;
+            target[seedKey] = loserSeed;
+            changed = true;
+          }
+        }
+      }
+    });
+
+    // After updating teams, re-check downstream completion (in case both slots filled & had pre-existing scores)
+    state.matches.forEach(m => {
+      if (m.teamA && m.teamB) {
+        const w = checkWinner(m);
+        if (!!w !== m.completed || w !== m.winner) {
+          m.completed = !!w; m.winner = w;
+          changed = true;
+        }
+      }
+    });
+
+    if (!changed) break;
+  }
+}
+
+function adjustScore(matchId, team, delta) {
+  const match = getMatch(matchId);
+  if (!match) return;
+  if (!match.teamA || !match.teamB) {
+    toast('Waiting for previous match');
+    return;
+  }
+  state.history.push(JSON.stringify({matches: state.matches, seeds: state.seeds}));
+  if (state.history.length > 50) state.history.shift();
+  if (team === 'A') match.scoreA = Math.max(0, match.scoreA + delta);
+  else match.scoreB = Math.max(0, match.scoreB + delta);
+  propagateBracket();
+  save();
+  renderBracket();
+  renderResults();
+}
+
+function resetMatch(matchId) {
+  if (!confirm('Reset this match to 0–0?')) return;
+  const match = getMatch(matchId);
+  if (!match) return;
+  state.history.push(JSON.stringify({matches: state.matches, seeds: state.seeds}));
+  match.scoreA = 0; match.scoreB = 0;
+  match.completed = false; match.winner = null;
+  propagateBracket();
+  save();
+  renderBracket();
+  renderResults();
+  toast('Match reset');
+}
+
+document.getElementById('undoBtn').addEventListener('click', () => {
+  if (state.history.length === 0) { toast('Nothing to undo'); return; }
+  const snapshot = JSON.parse(state.history.pop());
+  state.matches = snapshot.matches;
+  state.seeds = snapshot.seeds;
+  save();
+  renderBracket();
+  renderResults();
+  toast('Undone');
+});
+
+function renderBracket() {
+  const container = document.getElementById('bracketContainer');
+  if (state.matches.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🏆</div><div class="empty-title">No bracket yet</div><div class="empty-text">Generate teams to seed the bracket</div></div>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  // Champion banner
+  const championMatchId = state.bracketFormat === 'double' ? 'GF' : 'F';
+  const finalMatch = getMatch(championMatchId);
+  if (finalMatch && finalMatch.completed) {
+    const champId = finalMatch.winner === 'A' ? finalMatch.teamA : finalMatch.teamB;
+    const champ = getTeam(champId);
+    if (champ) {
+      const banner = document.createElement('div');
+      banner.className = 'champion-card';
+      banner.innerHTML = `
+        <div class="champion-trophy">🏆</div>
+        <div class="champion-label">Champion</div>
+        <div class="champion-name">${esc(champ.name)}</div>
+        <div class="champion-players">${esc(teamPlayers(champId))}</div>
+      `;
+      container.appendChild(banner);
+    }
+  }
+
+  // Seed info
+  const seedInfo = document.createElement('div');
+  seedInfo.className = 'seed-info';
+  const byes = state.seeds.slice(0, 2).map((id, i) => `<strong>#${i+1}</strong> ${esc(teamDisplayName(id))}`).join(' · ');
+  seedInfo.innerHTML = `🎟️ Byes to Semifinals — ${byes}`;
+  container.appendChild(seedInfo);
+
+  if (state.bracketFormat === 'single') {
+    renderSingleElimBracket(container);
+  } else {
+    renderDoubleElimBracket(container);
+  }
+}
+
+function renderSingleElimBracket(container) {
+  const stages = [
+    { key: 'QF', name: 'Quarterfinals', icon: '🥊' },
+    { key: 'SF', name: 'Semifinals', icon: '🔥' },
+    { key: 'F', name: 'Final', icon: '🏆' }
+  ];
+  let currentStage = 'QF';
+  const qfDone = state.matches.filter(m => m.stage === 'QF').every(m => m.completed);
+  const sfDone = state.matches.filter(m => m.stage === 'SF').every(m => m.completed);
+  if (qfDone && !sfDone) currentStage = 'SF';
+  else if (qfDone && sfDone) currentStage = 'F';
+
+  stages.forEach(stage => {
+    const stageMatches = state.matches.filter(m => m.stage === stage.key);
+    if (stageMatches.length === 0) return;
+    const section = document.createElement('div');
+    section.className = 'bracket-stage';
+    const isCurrent = stage.key === currentStage && stageMatches.some(m => !m.completed);
+    const done = stageMatches.filter(m => m.completed).length;
+    section.innerHTML = `
+      <div class="stage-header">
+        <span class="stage-name ${isCurrent ? 'current' : ''}">
+          <span class="stage-icon">${stage.icon}</span>
+          ${stage.name}${isCurrent ? ' · current' : ''}
+        </span>
+        <span class="stage-progress">${done}/${stageMatches.length}</span>
+      </div>
+      <div class="bracket-matches"></div>
+    `;
+    const list = section.querySelector('.bracket-matches');
+    stageMatches.forEach(m => list.appendChild(matchCard(m, stage.key === 'F')));
+    container.appendChild(section);
+  });
+}
+
+function renderDoubleElimBracket(container) {
+  // Section 1: Winners Bracket
+  const winnersSection = document.createElement('div');
+  winnersSection.className = 'bracket-section';
+  winnersSection.innerHTML = '<div class="bracket-section-title winners">⬆️ Winners Bracket</div>';
+
+  const wbStages = [
+    { key: 'QF', name: 'Quarterfinals', icon: '🥊' },
+    { key: 'SF', name: 'Semifinals', icon: '🔥' },
+    { key: 'F',  name: 'Winners Final', icon: '👑' }
+  ];
+  wbStages.forEach(stage => {
+    const stageMatches = state.matches.filter(m => m.section === 'W' && m.stage === stage.key);
+    if (stageMatches.length === 0) return;
+    const section = document.createElement('div');
+    section.className = 'bracket-stage';
+    const allCompletedBefore = state.matches.filter(m =>
+      (m.section === 'W' && (
+        (stage.key === 'SF' && m.stage === 'QF') ||
+        (stage.key === 'F' && (m.stage === 'QF' || m.stage === 'SF'))
+      ))
+    ).every(m => m.completed);
+    const isCurrent = (stage.key === 'QF' || allCompletedBefore) && stageMatches.some(m => !m.completed);
+    const done = stageMatches.filter(m => m.completed).length;
+    section.innerHTML = `
+      <div class="stage-header">
+        <span class="stage-name ${isCurrent ? 'current' : ''}">
+          <span class="stage-icon">${stage.icon}</span>
+          ${stage.name}${isCurrent ? ' · current' : ''}
+        </span>
+        <span class="stage-progress">${done}/${stageMatches.length}</span>
+      </div>
+      <div class="bracket-matches"></div>
+    `;
+    const list = section.querySelector('.bracket-matches');
+    stageMatches.forEach(m => list.appendChild(matchCard(m, false)));
+    winnersSection.appendChild(section);
+  });
+  container.appendChild(winnersSection);
+
+  // Section 2: Losers Bracket
+  const losersSection = document.createElement('div');
+  losersSection.className = 'bracket-section';
+  losersSection.innerHTML = '<div class="bracket-section-title losers">⬇️ Losers Bracket</div>';
+
+  const lbStages = [
+    { key: 'LR1', name: 'Losers Round 1', icon: '⚔️' },
+    { key: 'LR2', name: 'Losers Round 2', icon: '⚔️' },
+    { key: 'LF',  name: 'Losers Final',   icon: '🛡️' }
+  ];
+  lbStages.forEach(stage => {
+    const stageMatches = state.matches.filter(m => m.section === 'L' && m.stage === stage.key);
+    if (stageMatches.length === 0) return;
+    const section = document.createElement('div');
+    section.className = 'bracket-stage';
+    const isCurrent = stageMatches.some(m => m.teamA && m.teamB && !m.completed);
+    const done = stageMatches.filter(m => m.completed).length;
+    section.innerHTML = `
+      <div class="stage-header">
+        <span class="stage-name ${isCurrent ? 'current' : ''}">
+          <span class="stage-icon">${stage.icon}</span>
+          ${stage.name}${isCurrent ? ' · current' : ''}
+        </span>
+        <span class="stage-progress">${done}/${stageMatches.length}</span>
+      </div>
+      <div class="bracket-matches"></div>
+    `;
+    const list = section.querySelector('.bracket-matches');
+    stageMatches.forEach(m => {
+      const card = matchCard(m, false);
+      card.classList.add('losers-match');
+      list.appendChild(card);
+    });
+    losersSection.appendChild(section);
+  });
+  container.appendChild(losersSection);
+
+  // Section 3: Grand Final
+  const gfMatches = state.matches.filter(m => m.section === 'GF');
+  if (gfMatches.length > 0) {
+    const gfSection = document.createElement('div');
+    gfSection.className = 'bracket-section';
+    gfSection.innerHTML = '<div class="bracket-section-title grand">👑 Grand Final</div>';
+    const stage = document.createElement('div');
+    stage.className = 'bracket-stage';
+    const isCurrent = gfMatches.some(m => m.teamA && m.teamB && !m.completed);
+    const done = gfMatches.filter(m => m.completed).length;
+    stage.innerHTML = `
+      <div class="stage-header">
+        <span class="stage-name ${isCurrent ? 'current' : ''}">
+          <span class="stage-icon">🏆</span>
+          Grand Final${isCurrent ? ' · current' : ''}
+        </span>
+        <span class="stage-progress">${done}/${gfMatches.length}</span>
+      </div>
+      <div class="bracket-matches"></div>
+    `;
+    const list = stage.querySelector('.bracket-matches');
+    gfMatches.forEach(m => list.appendChild(matchCard(m, true)));
+    gfSection.appendChild(stage);
+    container.appendChild(gfSection);
+  }
+}
+
+function matchCard(match, isFinal) {
+  const card = document.createElement('div');
+  const locked = !match.teamA || !match.teamB;
+  let statusClass, statusText;
+  if (match.completed) { statusClass = 'completed'; statusText = 'Final'; }
+  else if (locked) { statusClass = 'locked'; statusText = 'Locked'; }
+  else if (match.scoreA > 0 || match.scoreB > 0) { statusClass = 'live'; statusText = 'Live'; }
+  else { statusClass = 'upcoming'; statusText = 'Ready'; }
+
+  card.className = `match-card ${statusClass === 'live' ? 'live' : ''} ${locked ? 'locked' : ''} ${isFinal ? 'final-match' : ''}`;
+
+  const renderTeamRow = (slot) => {
+    const teamId = slot === 'A' ? match.teamA : match.teamB;
+    const seed = slot === 'A' ? match.seedA : match.seedB;
+    const score = slot === 'A' ? match.scoreA : match.scoreB;
+    const isWinner = match.winner === slot;
+    const isTbd = !teamId;
+
+    let nameContent;
+    if (isTbd) {
+      // Find which match feeds this slot
+      const winnerSource = state.matches.find(m => m.winnerTo && m.winnerTo.matchId === match.id && m.winnerTo.slot === slot);
+      const loserSource  = state.matches.find(m => m.loserTo  && m.loserTo.matchId  === match.id && m.loserTo.slot  === slot);
+      if (winnerSource) {
+        nameContent = `Winner of ${esc(winnerSource.label)}`;
+      } else if (loserSource) {
+        nameContent = `Loser of ${esc(loserSource.label)}`;
+      } else {
+        nameContent = 'TBD';
+      }
+    } else {
+      const seedLabel = seed ? `<span style="color: var(--ink-muted); font-weight: 500; margin-right: 6px;">#${seed}</span>` : '';
+      nameContent = `${seedLabel}${esc(teamDisplayName(teamId))}`;
+    }
+
+    return `
+      <div class="team-row ${isWinner ? 'winner' : ''} ${isTbd ? 'tbd' : ''}">
+        <div>
+          <div class="team-row-name">${nameContent}</div>
+          ${!isTbd ? `<div class="team-row-players">${esc(teamPlayers(teamId))}</div>` : ''}
+        </div>
+        <div class="score-controls">
+          <button class="score-btn" data-action="dec" data-team="${slot}" aria-label="Decrease" ${locked ? 'disabled' : ''}>−</button>
+          <div class="score-display">${score}</div>
+          <button class="score-btn plus" data-action="inc" data-team="${slot}" aria-label="Increase" ${locked ? 'disabled' : ''}>+</button>
+        </div>
+      </div>
+    `;
+  };
+
+  const showReset = !locked && (match.scoreA > 0 || match.scoreB > 0 || match.completed);
+
+  card.innerHTML = `
+    <div class="match-meta">
+      <span>${esc(match.label)}</span>
+      <span class="match-status ${statusClass}">${statusText}</span>
+    </div>
+    ${renderTeamRow('A')}
+    ${renderTeamRow('B')}
+    ${showReset ? '<button class="match-action-btn" data-action="reset">Reset Match</button>' : ''}
+  `;
+
+  card.querySelectorAll('button[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      if (action === 'inc') adjustScore(match.id, btn.dataset.team, 1);
+      else if (action === 'dec') adjustScore(match.id, btn.dataset.team, -1);
+      else if (action === 'reset') resetMatch(match.id);
+    });
+  });
+  return card;
+}
+
+document.querySelectorAll('#winPointsSeg button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#winPointsSeg button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.winPoints = parseInt(btn.dataset.val);
+    propagateBracket();
+    save();
+    renderBracket();
+    renderResults();
+  });
+});
+document.getElementById('winByTwo').addEventListener('change', e => {
+  state.winByTwo = e.target.checked;
+  propagateBracket();
+  save();
+  renderBracket();
+  renderResults();
+});
+
+/* RESULTS */
+function teamRecord(teamId) {
+  let wins = 0, losses = 0;
+  state.matches.forEach(m => {
+    if (!m.completed) return;
+    const involved = m.teamA === teamId || m.teamB === teamId;
+    if (!involved) return;
+    const won = (m.winner === 'A' && m.teamA === teamId) || (m.winner === 'B' && m.teamB === teamId);
+    if (won) wins++; else losses++;
+  });
+  return { wins, losses };
+}
+
+function computeSingleElimResults() {
+  const results = [];
+  const f = getMatch('F');
+  const sf1 = getMatch('SF1'), sf2 = getMatch('SF2');
+  const qf1 = getMatch('QF1'), qf2 = getMatch('QF2');
+
+  if (f && f.completed) {
+    const winnerId = f.winner === 'A' ? f.teamA : f.teamB;
+    const loserId  = f.winner === 'A' ? f.teamB : f.teamA;
+    results.push({ rank: 1, teamId: winnerId, note: 'Champion' });
+    results.push({ rank: 2, teamId: loserId,  note: 'Runner-up' });
+  }
+  if (sf1 && sf2 && sf1.completed && sf2.completed) {
+    const sf1L = sf1.winner === 'A' ? sf1.teamB : sf1.teamA;
+    const sf2L = sf2.winner === 'A' ? sf2.teamB : sf2.teamA;
+    if (sf1L && !results.find(r => r.teamId === sf1L)) results.push({ rank: 3, teamId: sf1L, note: 'Semifinalist' });
+    if (sf2L && !results.find(r => r.teamId === sf2L)) results.push({ rank: 3, teamId: sf2L, note: 'Semifinalist' });
+  }
+  if (qf1 && qf2 && qf1.completed && qf2.completed) {
+    const qf1L = qf1.winner === 'A' ? qf1.teamB : qf1.teamA;
+    const qf2L = qf2.winner === 'A' ? qf2.teamB : qf2.teamA;
+    if (qf1L && !results.find(r => r.teamId === qf1L)) results.push({ rank: 5, teamId: qf1L, note: 'Quarterfinalist' });
+    if (qf2L && !results.find(r => r.teamId === qf2L)) results.push({ rank: 5, teamId: qf2L, note: 'Quarterfinalist' });
+  }
+  return results;
+}
+
+function computeDoubleElimResults() {
+  const results = [];
+  const gf  = getMatch('GF');
+  const wf  = getMatch('WF');
+  const lf  = getMatch('LR3'); // labeled "Losers Final"
+  const lr2 = getMatch('LR2');
+  const lr1 = getMatch('LR1');
+
+  // 1st & 2nd from grand final
+  if (gf && gf.completed) {
+    const winnerId = gf.winner === 'A' ? gf.teamA : gf.teamB;
+    const loserId  = gf.winner === 'A' ? gf.teamB : gf.teamA;
+    results.push({ rank: 1, teamId: winnerId, note: 'Champion' });
+    results.push({ rank: 2, teamId: loserId,  note: 'Runner-up' });
+  }
+  // 3rd: Loser of LF (LR3) — if not already in results
+  if (lf && lf.completed) {
+    const lfL = lf.winner === 'A' ? lf.teamB : lf.teamA;
+    if (lfL && !results.find(r => r.teamId === lfL)) {
+      results.push({ rank: 3, teamId: lfL, note: 'Losers Finalist' });
+    }
+  }
+  // 4th: Loser of LR2 (loses in LB after WSF loss)
+  if (lr2 && lr2.completed) {
+    const lr2L = lr2.winner === 'A' ? lr2.teamB : lr2.teamA;
+    if (lr2L && !results.find(r => r.teamId === lr2L)) {
+      results.push({ rank: 4, teamId: lr2L, note: 'Losers R2' });
+    }
+  }
+  // 5th-6th tied: Loser of LR1 + WF loser (the team that loses Winners Final without going through LB)
+  // Actually let me think carefully:
+  //   In our structure WF loser doesn't go to LB (we kept it at 9 matches).
+  //   So WF loser is eliminated. They have 1 loss.
+  //   LR1 loser also has 1 loss... wait no, LR1 is between two QF losers (each with 1 loss already).
+  //   LR1 loser has 2 losses → eliminated.
+  //   So WF loser also has 1 loss but no path forward → effectively eliminated.
+  //
+  // Hmm — this is the tradeoff of skipping the WF loser's drop to LB.
+  // For ranking purposes:
+  //   1st = GF winner
+  //   2nd = GF loser (could be WF winner or LF winner)
+  //   3rd = LF loser
+  //   4th = LR2 loser (this team had been WSF loser, lost again)
+  //   5th = WF loser (eliminated despite 1 loss)
+  //   6th = LR1 loser (had 2 losses)
+  //
+  // Let's place WF loser at 5 and LR1 loser at 6
+  if (wf && wf.completed) {
+    const wfL = wf.winner === 'A' ? wf.teamB : wf.teamA;
+    if (wfL && !results.find(r => r.teamId === wfL)) {
+      results.push({ rank: 5, teamId: wfL, note: 'Winners Final' });
+    }
+  }
+  if (lr1 && lr1.completed) {
+    const lr1L = lr1.winner === 'A' ? lr1.teamB : lr1.teamA;
+    if (lr1L && !results.find(r => r.teamId === lr1L)) {
+      results.push({ rank: 6, teamId: lr1L, note: 'Losers R1' });
+    }
+  }
+  return results;
+}
+
+function computeResults() {
+  if (state.teams.length === 0) return [];
+  return state.bracketFormat === 'double' ? computeDoubleElimResults() : computeSingleElimResults();
+}
+
+/* ============================================
+   BRACKET CHART (visual SVG tree)
+   ============================================ */
+
+// Compact match-box renderer used by both single & double-elim charts.
+// Returns SVG string for a single match.
+function bcMatchBox(m, x, y, w = 130, h = 38) {
+  if (!m) return '';
+  const isCompleted = m.completed;
+  const isLive = !isCompleted && (m.scoreA > 0 || m.scoreB > 0);
+  const isFinal = m.id === 'F' || m.id === 'GF';
+  let bgClass = 'bc-match-bg';
+  if (isCompleted) bgClass += ' completed';
+  else if (isLive) bgClass += ' live';
+  if (isFinal) bgClass += ' final';
+
+  const renderRow = (slot, rowY) => {
+    const teamId = slot === 'A' ? m.teamA : m.teamB;
+    const seed = slot === 'A' ? m.seedA : m.seedB;
+    const score = slot === 'A' ? m.scoreA : m.scoreB;
+    const isWinner = m.winner === slot;
+    const isTbd = !teamId;
+
+    let displayName;
+    if (isTbd) {
+      const winnerSrc = state.matches.find(mm => mm.winnerTo && mm.winnerTo.matchId === m.id && mm.winnerTo.slot === slot);
+      const loserSrc  = state.matches.find(mm => mm.loserTo  && mm.loserTo.matchId  === m.id && mm.loserTo.slot  === slot);
+      if (winnerSrc) displayName = `W of ${winnerSrc.id}`;
+      else if (loserSrc) displayName = `L of ${loserSrc.id}`;
+      else displayName = 'TBD';
+    } else {
+      const fullName = teamDisplayName(teamId);
+      displayName = fullName.length > 14 ? fullName.slice(0, 13) + '…' : fullName;
+    }
+
+    const seedTxt = seed && !isTbd ? `#${seed}` : '';
+    const nameClass = isTbd ? 'bc-team-name tbd' : (isWinner ? 'bc-team-name winner' : 'bc-team-name');
+    const seedClass = isWinner ? 'bc-seed winner' : 'bc-seed';
+    const scoreClass = isWinner ? 'bc-score winner' : 'bc-score';
+    const trophy = (isWinner && isFinal) ? '<text class="bc-trophy" x="' + (x + w - 28) + '" y="' + (rowY + 4) + '">🏆</text>' : '';
+
+    return `
+      <text class="${seedClass}" x="${x + 6}" y="${rowY + 4}">${seedTxt}</text>
+      <text class="${nameClass}" x="${x + 22}" y="${rowY + 4}">${esc(displayName)}</text>
+      <text class="${scoreClass}" x="${x + w - 8}" y="${rowY + 4}">${isTbd ? '' : score}</text>
+      ${trophy}
+    `;
+  };
+
+  return `
+    <rect class="${bgClass}" x="${x}" y="${y}" width="${w}" height="${h}" rx="4" />
+    <line class="bc-match-divider" x1="${x}" y1="${y + h/2}" x2="${x + w}" y2="${y + h/2}" />
+    <text class="bc-match-label" x="${x + w/2}" y="${y - 4}" text-anchor="middle">${esc(m.id)}</text>
+    ${renderRow('A', y + h * 0.30)}
+    ${renderRow('B', y + h * 0.78)}
+  `;
+}
+
+// Connector line between two match boxes (right side of source → left side of target)
+function bcConnector(x1, y1, x2, y2, isWinnerPath = true) {
+  const cls = isWinnerPath ? 'bc-line winner-path' : 'bc-line loser-path';
+  // Determine if this is a "completed" winner path — we caller will pass plain class if not
+  const midX = (x1 + x2) / 2;
+  return `<path class="${cls}" d="M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}" />`;
+}
+
+function renderSingleElimChart() {
+  const W = 130, H = 38;
+  const COL_GAP = 40;
+  const ROW_GAP = 24;
+  const PADDING_X = 20;
+  const PADDING_Y = 28;
+  const totalW = PADDING_X * 2 + W * 3 + COL_GAP * 2;
+  const totalH = PADDING_Y * 2 + H * 4 + ROW_GAP * 3 + 20;
+
+  // Column X positions
+  const colX = [
+    PADDING_X,                        // QF column
+    PADDING_X + W + COL_GAP,          // SF column
+    PADDING_X + (W + COL_GAP) * 2     // F column
+  ];
+
+  // Match positions (y centers)
+  // QF column (4 slots: bye, QF1, QF2, bye)
+  // Actually QFs only have 2 matches; SFs have 2; F has 1
+  // Layout aligned vertically:
+  //   QF1 at row 1, QF2 at row 3
+  //   SF1 spans rows 0-1 (winner of QF1), SF2 spans rows 2-3
+  //   F is centered
+
+  const qfY = [PADDING_Y + 28, PADDING_Y + 28 + H + ROW_GAP * 2 + H];
+  const qf1 = getMatch('QF1');
+  const qf2 = getMatch('QF2');
+  const sf1 = getMatch('SF1');
+  const sf2 = getMatch('SF2');
+  const f   = getMatch('F');
+
+  // SF y positions — center between QF + bye row
+  // Visualize: bye-team is implicit in SF slot A
+  // Place SF1 between byeRow1 (y=PADDING_Y) and qfY[0]
+  // Place SF2 between qfY[1] and byeRow2 (y= qfY[1] + H + ROW_GAP)
+  const sfY = [
+    (PADDING_Y + qfY[0]) / 2,
+    (qfY[1] + (qfY[1] + H + ROW_GAP * 1.4)) / 2
+  ];
+  const fY = (sfY[0] + sfY[1]) / 2;
+
+  // Adjust totalH based on actual layout
+  const computedH = Math.max(totalH, qfY[1] + H + PADDING_Y + 30);
+
+  // Build SVG
+  let svg = '';
+
+  // Round labels
+  svg += `<text class="bc-round-label" x="${colX[0] + W/2}" y="14" text-anchor="middle">QUARTERFINALS</text>`;
+  svg += `<text class="bc-round-label" x="${colX[1] + W/2}" y="14" text-anchor="middle">SEMIFINALS</text>`;
+  svg += `<text class="bc-round-label" x="${colX[2] + W/2}" y="14" text-anchor="middle">FINAL</text>`;
+
+  // Connectors first (so they sit behind boxes)
+  // QF1 → SF1 (slot B)
+  const qf1WinnerPath = qf1 && qf1.completed;
+  svg += bcConnector(
+    colX[0] + W, qfY[0] + H/2,
+    colX[1], sfY[0] + H * 0.78,
+    qf1WinnerPath
+  );
+  // QF2 → SF2 (slot B)
+  const qf2WinnerPath = qf2 && qf2.completed;
+  svg += bcConnector(
+    colX[0] + W, qfY[1] + H/2,
+    colX[1], sfY[1] + H * 0.78,
+    qf2WinnerPath
+  );
+  // SF1 → F (slot A)
+  const sf1WinnerPath = sf1 && sf1.completed;
+  svg += bcConnector(
+    colX[1] + W, sfY[0] + H/2,
+    colX[2], fY + H * 0.30,
+    sf1WinnerPath
+  );
+  // SF2 → F (slot B)
+  const sf2WinnerPath = sf2 && sf2.completed;
+  svg += bcConnector(
+    colX[1] + W, sfY[1] + H/2,
+    colX[2], fY + H * 0.78,
+    sf2WinnerPath
+  );
+
+  // Override connector class if no progression yet
+  if (!qf1WinnerPath) svg = svg.replace(/class="bc-line winner-path"/, 'class="bc-line"');
+  // (We re-render to plain lines for incomplete paths — handled per-call below instead)
+
+  // Match boxes
+  svg += bcMatchBox(qf1, colX[0], qfY[0], W, H);
+  svg += bcMatchBox(qf2, colX[0], qfY[1], W, H);
+  svg += bcMatchBox(sf1, colX[1], sfY[0], W, H);
+  svg += bcMatchBox(sf2, colX[1], sfY[1], W, H);
+  svg += bcMatchBox(f,   colX[2], fY,     W, H);
+
+  return `<svg class="bracket-chart" viewBox="0 0 ${totalW} ${computedH}" width="${totalW}" preserveAspectRatio="xMidYMid meet">${svg}</svg>`;
+}
+
+function renderDoubleElimChart() {
+  const W = 130, H = 38;
+  const COL_GAP = 36;
+  const ROW_GAP = 18;
+  const PADDING_X = 20;
+
+  // Layout strategy:
+  //  Row 1: WINNERS BRACKET (top portion)
+  //  Row 2: LOSERS BRACKET (middle)
+  //  Row 3: GRAND FINAL (right side, centered between)
+  //
+  // 4 columns total in WB: [WQF, WSF, WF] then [GF]
+  // LB spans 4 columns roughly: [empty, LR1, LR2, LR3/LF]
+
+  // Column X positions
+  const colX = [
+    PADDING_X,                        // 0: WQF column
+    PADDING_X + W + COL_GAP,          // 1: WSF / LR1 column
+    PADDING_X + (W + COL_GAP) * 2,    // 2: WF / LR2 column
+    PADDING_X + (W + COL_GAP) * 3,    // 3: LR3 / LF column
+    PADDING_X + (W + COL_GAP) * 4     // 4: GF column
+  ];
+  const totalW = colX[4] + W + PADDING_X;
+
+  // ===== WINNERS BRACKET (top) =====
+  const wbHeaderY = 16;
+  const wbStartY = 36;
+  const wqfY = [wbStartY + 28, wbStartY + 28 + H + ROW_GAP * 2 + H];
+  const wsfY = [
+    (wbStartY + wqfY[0]) / 2,
+    (wqfY[1] + (wqfY[1] + H + ROW_GAP * 1.5)) / 2
+  ];
+  const wfY = (wsfY[0] + wsfY[1]) / 2;
+  const wbBottomY = wqfY[1] + H + 30;
+
+  // ===== LOSERS BRACKET (middle) =====
+  const lbHeaderY = wbBottomY + 12;
+  const lbStartY = lbHeaderY + 28;
+  const lr1Y = lbStartY;
+  const lr2Y = lbStartY + (H + ROW_GAP) * 0.5;
+  const lr3Y = lbStartY + (H + ROW_GAP) * 1;
+  const lbBottomY = lr3Y + H + 20;
+
+  // ===== GRAND FINAL =====
+  // Position vertically centered between WF and LR3
+  const gfY = (wfY + lr3Y) / 2;
+
+  const totalH = lbBottomY + 16;
+
+  const wqf1 = getMatch('WQF1');
+  const wqf2 = getMatch('WQF2');
+  const wsf1 = getMatch('WSF1');
+  const wsf2 = getMatch('WSF2');
+  const wf   = getMatch('WF');
+  const lr1  = getMatch('LR1');
+  const lr2  = getMatch('LR2');
+  const lr3  = getMatch('LR3');
+  const gf   = getMatch('GF');
+
+  let svg = '';
+
+  // Section labels (right after column round-labels)
+  svg += `<text class="bc-section-label winners" x="${PADDING_X}" y="${wbHeaderY}">⬆️ WINNERS</text>`;
+  svg += `<text class="bc-section-label losers"  x="${PADDING_X}" y="${lbHeaderY + 14}">⬇️ LOSERS</text>`;
+
+  // Column round labels
+  svg += `<text class="bc-round-label" x="${colX[0] + W/2}" y="${wbHeaderY + 14}" text-anchor="middle">WQF</text>`;
+  svg += `<text class="bc-round-label" x="${colX[1] + W/2}" y="${wbHeaderY + 14}" text-anchor="middle">WSF</text>`;
+  svg += `<text class="bc-round-label" x="${colX[2] + W/2}" y="${wbHeaderY + 14}" text-anchor="middle">WF</text>`;
+  svg += `<text class="bc-round-label" x="${colX[4] + W/2}" y="${wbHeaderY + 14}" text-anchor="middle">GRAND FINAL</text>`;
+
+  // ===== Connectors =====
+  const cwin = (m) => m && m.completed;
+
+  // WB winner paths
+  svg += bcConnectorClass(colX[0] + W, wqfY[0] + H/2, colX[1], wsfY[0] + H * 0.78, cwin(wqf1) ? 'winner-path' : '');
+  svg += bcConnectorClass(colX[0] + W, wqfY[1] + H/2, colX[1], wsfY[1] + H * 0.78, cwin(wqf2) ? 'winner-path' : '');
+  svg += bcConnectorClass(colX[1] + W, wsfY[0] + H/2, colX[2], wfY + H * 0.30, cwin(wsf1) ? 'winner-path' : '');
+  svg += bcConnectorClass(colX[1] + W, wsfY[1] + H/2, colX[2], wfY + H * 0.78, cwin(wsf2) ? 'winner-path' : '');
+  // WF → GF (slot A)
+  svg += bcConnectorClass(colX[2] + W, wfY + H/2, colX[4], gfY + H * 0.30, cwin(wf) ? 'winner-path' : '');
+
+  // LB loser paths (dashed, going down from WB)
+  // WQF1 loser → LR1 slot A
+  svg += bcConnectorClass(colX[0] + W/2, wqfY[0] + H, colX[1] + 6, lr1Y + H * 0.30, cwin(wqf1) ? 'loser-path' : '', true);
+  // WQF2 loser → LR1 slot B
+  svg += bcConnectorClass(colX[0] + W/2 + 30, wqfY[1] + H, colX[1] + 12, lr1Y + H * 0.78, cwin(wqf2) ? 'loser-path' : '', true);
+  // WSF1 loser → LR2 slot B
+  svg += bcConnectorClass(colX[1] + W, wsfY[0] + H, colX[2] + 12, lr2Y + H * 0.78, cwin(wsf1) ? 'loser-path' : '', true);
+  // WSF2 loser → LR3 slot B
+  svg += bcConnectorClass(colX[1] + W + 20, wsfY[1] + H, colX[3] + 12, lr3Y + H * 0.78, cwin(wsf2) ? 'loser-path' : '', true);
+
+  // LB winner paths
+  svg += bcConnectorClass(colX[1] + W, lr1Y + H/2, colX[2], lr2Y + H * 0.30, cwin(lr1) ? 'winner-path' : '');
+  svg += bcConnectorClass(colX[2] + W, lr2Y + H/2, colX[3], lr3Y + H * 0.30, cwin(lr2) ? 'winner-path' : '');
+  // LR3 → GF slot B
+  svg += bcConnectorClass(colX[3] + W, lr3Y + H/2, colX[4], gfY + H * 0.78, cwin(lr3) ? 'winner-path' : '');
+
+  // ===== Match boxes =====
+  svg += bcMatchBox(wqf1, colX[0], wqfY[0], W, H);
+  svg += bcMatchBox(wqf2, colX[0], wqfY[1], W, H);
+  svg += bcMatchBox(wsf1, colX[1], wsfY[0], W, H);
+  svg += bcMatchBox(wsf2, colX[1], wsfY[1], W, H);
+  svg += bcMatchBox(wf,   colX[2], wfY,     W, H);
+
+  svg += bcMatchBox(lr1,  colX[1], lr1Y,    W, H);
+  svg += bcMatchBox(lr2,  colX[2], lr2Y,    W, H);
+  svg += bcMatchBox(lr3,  colX[3], lr3Y,    W, H);
+
+  svg += bcMatchBox(gf,   colX[4], gfY,     W, H);
+
+  return `<svg class="bracket-chart" viewBox="0 0 ${totalW} ${totalH}" width="${totalW}" preserveAspectRatio="xMidYMid meet">${svg}</svg>`;
+}
+
+// Helper that allows an explicit class name (or empty for plain line)
+function bcConnectorClass(x1, y1, x2, y2, extraClass = '', curved = false) {
+  const cls = `bc-line ${extraClass}`.trim();
+  const midX = (x1 + x2) / 2;
+  if (curved) {
+    return `<path class="${cls}" d="M ${x1} ${y1} L ${x1} ${(y1+y2)/2} L ${x2} ${(y1+y2)/2} L ${x2} ${y2}" />`;
+  }
+  return `<path class="${cls}" d="M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}" />`;
+}
+
+function renderBracketChart() {
+  const container = document.getElementById('bracketChartContainer');
+  if (!container) return;
+  if (state.matches.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  const chartSvg = state.bracketFormat === 'double'
+    ? renderDoubleElimChart()
+    : renderSingleElimChart();
+  container.innerHTML = `
+    <div class="bracket-chart-wrap">
+      <div class="bracket-chart-hint">↔ Scroll to see the full bracket</div>
+      ${chartSvg}
+    </div>
+  `;
+}
+
+function renderResults() {
+  // Always (re)render the chart — it's useful even mid-tournament
+  renderBracketChart();
+
+  const container = document.getElementById('resultsContainer');
+  if (state.teams.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🏆</div><div class="empty-title">No results yet</div><div class="empty-text">Generate teams to begin</div></div>';
+    return;
+  }
+  const placements = computeResults();
+  if (placements.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🏁</div><div class="empty-title">In progress</div><div class="empty-text">Final placements will appear as matches complete</div></div>';
+    return;
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'results-list';
+  const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+  placements.forEach(p => {
+    const team = getTeam(p.teamId);
+    if (!team) return;
+    const rec = teamRecord(p.teamId);
+    const medal = medals[p.rank] || '';
+    const rowClass = p.rank === 1 ? 'gold' : (p.rank === 2 ? 'silver' : (p.rank === 3 ? 'bronze' : ''));
+    const row = document.createElement('div');
+    row.className = `result-row ${rowClass}`;
+    row.innerHTML = `
+      <div class="${medal ? 'result-medal' : 'result-rank'}">${medal || p.rank}</div>
+      <div>
+        <div class="result-name">${esc(team.name)} <span style="font-weight: 500; color: var(--ink-muted); font-size: 12px;">· ${esc(p.note)}</span></div>
+        <div class="result-sub">${esc(teamPlayers(p.teamId))}</div>
+      </div>
+      <div class="result-record">${rec.wins}-${rec.losses}</div>
+    `;
+    wrap.appendChild(row);
+  });
+  container.innerHTML = '';
+  container.appendChild(wrap);
+}
+
+document.getElementById('reseedBtn').addEventListener('click', () => {
+  closeMenu();
+  if (state.teams.length !== 6) { toast('Generate teams first'); return; }
+  if (!confirm('Re-seed the bracket? All match progress will be lost.')) return;
+  seedAndBuildBracket();
+  state.history = [];
+  save();
+  renderBracket();
+  renderResults();
+  toast('Bracket re-seeded');
+});
+
+function exportCSV() {
+  closeMenu();
+  if (state.teams.length === 0) { toast('Nothing to export'); return; }
+  let csv = 'Seed,Team,Players\n';
+  state.seeds.forEach((id, i) => {
+    const team = getTeam(id);
+    csv += `${i+1},"${team.name}","${teamPlayers(id)}"\n`;
+  });
+  csv += '\nBracket Matches\nID,Section,Stage,Team A,Team B,Score A,Score B,Winner\n';
+  state.matches.forEach(m => {
+    const winner = m.winner === 'A' ? teamDisplayName(m.teamA) : (m.winner === 'B' ? teamDisplayName(m.teamB) : '');
+    csv += `${m.id},${m.section},${m.label},"${teamDisplayName(m.teamA)}","${teamDisplayName(m.teamB)}",${m.scoreA},${m.scoreB},"${winner}"\n`;
+  });
+  csv += '\nFinal Placements\nRank,Team,Players,Result\n';
+  computeResults().forEach(p => {
+    const team = getTeam(p.teamId);
+    csv += `${p.rank},"${team.name}","${teamPlayers(p.teamId)}","${p.note}"\n`;
+  });
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pickleball-bracket-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exported');
+}
+
+function exportPDF() {
+  closeMenu();
+  if (state.teams.length === 0) { toast('Nothing to export'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('Pickleball Tournament — Bracket', 14, 20);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 27);
+  const formatLabel = state.bracketFormat === 'double' ? 'Double-elimination' : 'Single-elimination';
+  doc.text(`Format: ${formatLabel} · First to ${state.winPoints}${state.winByTwo ? ', win by 2' : ''}`, 14, 33);
+  doc.autoTable({
+    startY: 40,
+    head: [['Seed', 'Team', 'Players']],
+    body: state.seeds.map((id, i) => [i+1, getTeam(id)?.name || '', teamPlayers(id)]),
+    headStyles: { fillColor: [22, 163, 74] },
+    styles: { fontSize: 9 }
+  });
+  let y = doc.lastAutoTable.finalY + 12;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('Bracket Results', 14, y);
+  doc.autoTable({
+    startY: y + 4,
+    head: [['Match', 'Team A', 'Score', 'Team B', 'Score', 'Winner']],
+    body: state.matches.map(m => {
+      const winner = m.winner === 'A' ? teamDisplayName(m.teamA) : (m.winner === 'B' ? teamDisplayName(m.teamB) : '—');
+      return [m.label, teamDisplayName(m.teamA), m.scoreA, teamDisplayName(m.teamB), m.scoreB, winner];
+    }),
+    headStyles: { fillColor: [22, 163, 74] },
+    styles: { fontSize: 9 }
+  });
+  const placements = computeResults();
+  if (placements.length > 0) {
+    y = doc.lastAutoTable.finalY + 12;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('Final Placements', 14, y);
+    doc.autoTable({
+      startY: y + 4,
+      head: [['Rank', 'Team', 'Players', 'Result']],
+      body: placements.map(p => [p.rank, getTeam(p.teamId)?.name || '', teamPlayers(p.teamId), p.note]),
+      headStyles: { fillColor: [251, 191, 36] },
+      styles: { fontSize: 9 }
+    });
+  }
+  doc.save(`pickleball-bracket-${new Date().toISOString().split('T')[0]}.pdf`);
+  toast('PDF exported');
+}
+
+document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
+
+document.getElementById('resetTourneyBtn').addEventListener('click', () => {
+  closeMenu();
+  if (!confirm('Reset everything? Players, teams, and bracket will be cleared.')) return;
+  state = {
+    players: Array(12).fill(''),
+    pairMode: 'auto',
+    teams: [], seeds: [], matches: [],
+    bracketFormat: 'single',
+    history: [],
+    winPoints: 11, winByTwo: true,
+    theme: state.theme, swapSelection: null,
+  };
+  save();
+  renderPlayers();
+  renderTeams();
+  renderBracket();
+  renderResults();
+  document.querySelectorAll('#winPointsSeg button').forEach(b => b.classList.toggle('active', b.dataset.val === '11'));
+  document.querySelectorAll('#pairModeToggle button').forEach(b => b.classList.toggle('active', b.dataset.mode === 'auto'));
+  document.querySelectorAll('#formatCard .format-option').forEach(b => b.classList.toggle('active', b.dataset.format === 'single'));
+  document.getElementById('winByTwo').checked = true;
+  updateGenerateBtn();
+  updateBracketSubtitle();
+  switchTab('players');
+  toast('Tournament reset');
+});
+
+function esc(str) {
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* INIT */
+load();
+applyTheme();
+renderPlayers();
+renderTeams();
+renderBracket();
+renderResults();
+document.querySelectorAll('#winPointsSeg button').forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === state.winPoints));
+document.querySelectorAll('#pairModeToggle button').forEach(b => b.classList.toggle('active', b.dataset.mode === state.pairMode));
+document.querySelectorAll('#formatCard .format-option').forEach(b => b.classList.toggle('active', b.dataset.format === state.bracketFormat));
+document.getElementById('winByTwo').checked = state.winByTwo;
+updateGenerateBtn();
+updateBracketSubtitle();
+</script>
+
+</body>
+</html>
